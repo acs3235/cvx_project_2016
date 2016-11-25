@@ -11,27 +11,27 @@ import sys
 from scipy import linalg as LA
 import math
 
-def gradf(x, J):
+def gradf(x):
 	return x
 
-def f(x, J):
+def f(x):
 	return x
 
-def linemin(f,J,x,p):
+def linemin(f,x,p):
 	return 0.1
 
 
 
-def bfgs(x, J, t, B):
+def bfgs(x, t, B):
 	I = np.diag(np.ones(len(x)))
-	gf = gradf(x, J)
+	gf = gradf(x)
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(f,J,x,p)
+	n = linemin(f,x,p)
 	s = n*p
 	x_new = x + s
-	y = gradf(x_new, J) - gf
+	y = gradf(x_new) - gf
 	if t == 0:
 		B = np.dot(s.T,y)/np.dot(y.T,y) * I
 	ro = 1/np.dot(s.T, y)
@@ -39,7 +39,7 @@ def bfgs(x, J, t, B):
 
 	return x_new, B
 
-def obfgs(x,J,t,B):
+def obfgs(x,t,B):
 	return x, B
 
 def make_J_matrix(n):
@@ -52,14 +52,14 @@ def make_J_matrix(n):
 
 	return J
 
-def descent(update, J, x_start, x_star, T=100):
+def descent(update, x_start, x_star, T=100):
     x = x_start
     B = np.diag(np.ones(len(x_start)))
 
     error = []
     for t in xrange(T):
         
-        x, B = update(x, J, t, B)
+        x, B = update(x, t, B)
 
         if (t % 1 == 0) or (t == T - 1):
             #calculate the error of this iteration
@@ -76,8 +76,8 @@ def main():
 	x_star = np.ones((5,1))
 	x_start = np.ones((5,1))
    
-	x, errors_1 = descent(bfgs, J, x_start, x_star, T=20)
-	x, errors_2 = descent(obfgs, J, x_start, x_star, T=20)
+	x, errors_1 = descent(bfgs, x_start, x_star, T=20)
+	x, errors_2 = descent(obfgs, x_start, x_star, T=20)
 
 
 	# plot results
