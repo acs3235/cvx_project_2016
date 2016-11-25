@@ -37,18 +37,18 @@ def f(x):
 	fx = 1/2 * np.dot(np.dot((x - X_STAR).T,H),x - X_STAR)
 	return fx
 
-def linemin(f,x,p):
-	return 0.1
+def linemin(Tau, t, n):
+	return Tau/(Tau + t) * n
 
 
 
-def bfgs(x, t, B):
+def bfgs(x, t, B, n, Tau):
 	I = np.diag(np.ones(len(x)))
 	gf = gradf(x)
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(f,x,p)
+	n = linemin(Tau, t, n)
 	s = n*p
 	x_new = x + s
 	y = gradf(x_new) - gf
@@ -57,19 +57,20 @@ def bfgs(x, t, B):
 	ro = 1/np.dot(s.T, y)
 	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + ro*np.dot(s,s.T)
 
-	return x_new, B
+	return x_new, B, n
 
-def obfgs(x,t,B):
-	return x, B
+def obfgs(x, t, B, n, Tau):
+	return x, B, n
 
-def descent(update, x_start, x_star, T=100):
+def descent(update, x_start, x_star, n, Tau, T=100):
     x = x_start
     B = np.diag(np.ones(len(x_start)))
 
     error = []
+
     for t in xrange(T):
         
-        x, B = update(x, t, B)
+        x, B, n = update(x, t, B, n, Tau)
 
         if (t % 1 == 0) or (t == T - 1):
             #calculate the error of this iteration
@@ -80,13 +81,16 @@ def descent(update, x_start, x_star, T=100):
     return x, error
 
 def main():
-	n = 5
+	N = 5
 	
-	x_star = np.ones((n,1))
-	x_start = np.ones((n,1)) * 3
-   
-	x, errors_1 = descent(bfgs, x_start, x_star, T=5)
-	x, errors_2 = descent(obfgs, x_start, x_star, T=5)
+	x_star = np.ones((N,1))
+	x_start = np.ones((N,1)) * 3
+
+	Tau = 1
+	n = 0.01
+
+	x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=5)
+	x, errors_2 = descent(obfgs, x_start, x_star, n, Tau, T=5)
 
 
 	# plot results
