@@ -11,11 +11,36 @@ import sys
 from scipy import linalg as LA
 import math
 
-def bfgs(x,J):
+def gradf(x, J):
 	return x
 
-def obfgs(x,J):
+def f(x, J):
 	return x
+
+def linemin(f,J,x,p):
+	return 0.1
+
+
+
+def bfgs(x, J, t, B):
+	I = np.diag(np.ones(len(x)))
+	gf = gradf(x, J)
+
+	#Steps a through i of algorithm 1
+	p = np.dot(-B, gf)
+	n = linemin(f,J,x,p)
+	s = n*p
+	x_new = x + s
+	y = gradf(x_new, J) - gf
+	if t == 0:
+		B = np.dot(s.T,y)/np.dot(y.T,y) * I
+	ro = 1/np.dot(s.T, y)
+	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + ro*np.dot(s,s.T)
+
+	return x_new, B
+
+def obfgs(x,J,t,B):
+	return x, B
 
 def make_J_matrix(n):
 	J = np.zeros((n,n))
@@ -29,10 +54,12 @@ def make_J_matrix(n):
 
 def descent(update, J, x_start, x_star, T=100):
     x = x_start
+    B = np.diag(np.ones(len(x_start)))
+
     error = []
     for t in xrange(T):
         
-        x = update(x, J)
+        x, B = update(x, J, t, B)
 
         if (t % 1 == 0) or (t == T - 1):
             #calculate the error of this iteration
