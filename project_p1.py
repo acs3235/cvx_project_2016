@@ -11,11 +11,31 @@ import sys
 from scipy import linalg as LA
 import math
 
+def make_J_matrix(n):
+	#Makes the matrix J as defined for a simple example function
+	J = np.zeros((n,n))
+
+	for i in range(1,n+1):
+		for j in range(1,n+1):
+			if i % j == 0 or j % i == 0:
+				J[i-1][j-1] = 1/(i + j - 1)
+
+	return J
+
+J = make_J_matrix(5)
+X_STAR = np.ones((5,1))
+
 def gradf(x):
-	return x
+	#Calculates the gradient of the function
+	H = np.dot(J,J.T)
+	gf = H * (x - X_STAR)
+	return gf
 
 def f(x):
-	return x
+	#calculates the function of x
+	H = np.dot(J,J.T)
+	fx = 1/2 * np.dot(np.dot((x - X_STAR).T,H),x - X_STAR)
+	return fx
 
 def linemin(f,x,p):
 	return 0.1
@@ -42,16 +62,6 @@ def bfgs(x, t, B):
 def obfgs(x,t,B):
 	return x, B
 
-def make_J_matrix(n):
-	J = np.zeros((n,n))
-
-	for i in range(1,n+1):
-		for j in range(1,n+1):
-			if i % j == 0 or j % i == 0:
-				J[i-1][j-1] = 1/(i + j - 1)
-
-	return J
-
 def descent(update, x_start, x_star, T=100):
     x = x_start
     B = np.diag(np.ones(len(x_start)))
@@ -71,13 +81,12 @@ def descent(update, x_start, x_star, T=100):
 
 def main():
 	n = 5
-	J = make_J_matrix(n)
 	
-	x_star = np.ones((5,1))
-	x_start = np.ones((5,1))
+	x_star = np.ones((n,1))
+	x_start = np.ones((n,1)) * 3
    
-	x, errors_1 = descent(bfgs, x_start, x_star, T=20)
-	x, errors_2 = descent(obfgs, x_start, x_star, T=20)
+	x, errors_1 = descent(bfgs, x_start, x_star, T=5)
+	x, errors_2 = descent(obfgs, x_start, x_star, T=5)
 
 
 	# plot results
