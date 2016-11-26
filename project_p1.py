@@ -3,6 +3,7 @@ Written by: Andrew Stier, Farzan Memarian, Sid Desai'''
 
 from __future__ import division
 import numpy as np
+import random
 import numpy.random as rn
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -10,6 +11,13 @@ import math
 import sys
 from scipy import linalg as LA
 import math
+
+LAM = 0.1
+C = 0.1
+TAU = 1000
+STEPSIZE = 0.1
+EPSILON = 10**(-10)
+BATCH_SIZE = 2
 
 def make_J_matrix(n):
 	#Makes the matrix J as defined for a simple example function
@@ -29,6 +37,15 @@ def gradf(x):
 	#Calculates the gradient of the function
 	H = np.dot(J,J.T)
 	gf = np.dot(H,(x - X_STAR))
+	return gf
+
+def ogradf(x, indices):
+	#Calculates the gradient of the function
+	H = np.dot(J,J.T)
+	x_sub = x[indices]
+	x_star_sub = X_STAR[indices]
+	H_sub = H[:][indices]
+	gf = np.dot(H_sub,(x_sub - x_star_sub))
 	return gf
 
 def f(x):
@@ -67,6 +84,17 @@ def bfgs(x, t, B, n, Tau):
 	return x_new, B, n
 
 def obfgs(x, t, B, n, Tau):
+	I = np.diag(np.ones(len(x)))
+	
+	#Step 2
+	if t == 0:
+		B = EPSILON * I
+
+	#Steps 3a - 3h
+	indices = random.sample(range(0, len(x)), BATCH_SIZE)
+	gradf = ogradf(x, indices)
+
+
 	return x, B, n
 
 def descent(update, x_start, x_star, n, Tau, T=100):
@@ -114,8 +142,8 @@ def main():
 	x_start = np.ones((N,1)) * 3 #The arbitrary point we start from
 
 	#tuning parameters which dictate how the stepsize will change
-	Tau = 1000
-	n = 0.1
+	Tau = TAU
+	n = STEPSIZE
 
 	#optimize using BFGS
 	x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=5)
