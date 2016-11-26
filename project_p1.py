@@ -12,6 +12,7 @@ import sys
 from scipy import linalg as LA
 import math
 
+ITERATIONS = 50
 LAM = 0.1
 C = 0.1
 TAU = 1000
@@ -44,7 +45,7 @@ def ogradf(x, indices):
 	H = np.dot(J,J.T)
 	x_sub = x[indices]
 	x_star_sub = X_STAR[indices]
-	H_sub = H[:][indices]
+	H_sub = H_sub = H[:,indices]
 	gf = np.dot(H_sub,(x_sub - x_star_sub))
 	return gf
 
@@ -92,10 +93,20 @@ def obfgs(x, t, B, n, Tau):
 
 	#Steps 3a - 3h
 	indices = random.sample(range(0, len(x)), BATCH_SIZE)
-	gradf = ogradf(x, indices)
+	gf = ogradf(x, indices)
 
+	#Steps a through i of algorithm 1
+	p = np.dot(-B, gf)
+	n = linemin(Tau, t, n)
+	s = n/C*p
+	x_new = x + s
+	y = ogradf(x_new, indices) - gf + LAM * s
+	if t == 0:
+		B = np.dot(s.T,y)/np.dot(y.T,y) * I
+	ro = 1/np.dot(s.T, y)
+	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + C*ro*np.dot(s,s.T)
 
-	return x, B, n
+	return x_new, B, n
 
 def descent(update, x_start, x_star, n, Tau, T=100):
 	'''
@@ -146,10 +157,10 @@ def main():
 	n = STEPSIZE
 
 	#optimize using BFGS
-	x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=5)
+	x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=ITERATIONS)
 
 	#optimize using online BFGS, AKA stochastic BFGS
-	x, errors_2 = descent(obfgs, x_start, x_star, n, Tau, T=5)
+	x, errors_2 = descent(obfgs, x_start, x_star, n, Tau, T=ITERATIONS)
 
 
 	# plot error vs. iteration for both
