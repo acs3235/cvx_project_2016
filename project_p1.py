@@ -28,7 +28,7 @@ X_STAR = np.ones((5,1))
 def gradf(x):
 	#Calculates the gradient of the function
 	H = np.dot(J,J.T)
-	gf = H * (x - X_STAR)
+	gf = np.dot(H,(x - X_STAR))
 	return gf
 
 def f(x):
@@ -38,11 +38,18 @@ def f(x):
 	return fx
 
 def linemin(Tau, t, n):
+	#update the stepsize
 	return Tau/(Tau + t) * n
 
 
 
 def bfgs(x, t, B, n, Tau):
+	'''
+	Update x based on the BFGS algorithm as listed in algorithm 1
+	Steps 3a-3i
+	'''
+
+
 	I = np.diag(np.ones(len(x)))
 	gf = gradf(x)
 
@@ -63,37 +70,61 @@ def obfgs(x, t, B, n, Tau):
 	return x, B, n
 
 def descent(update, x_start, x_star, n, Tau, T=100):
-    x = x_start
-    B = np.diag(np.ones(len(x_start)))
+	'''
+	This function does descent optimization using the update method of choice.
+	The l2 error is recorded each iteration.
 
-    error = []
+	Args:
+	update: update method of choice
+	x_start: initial guess for x
+	x_star: the correct optimal x
+	n: the initial stepsize
+	Tau: determines how much the stepsize will decrease by each iteration
+	T: The number of iterations to perform
 
-    for t in xrange(T):
-        
-        x, B, n = update(x, t, B, n, Tau)
+	Output:
+	x: The optimal x found by the descent algorithm
+	error: A list containing the error each iteration
+	'''
 
-        if (t % 1 == 0) or (t == T - 1):
-            #calculate the error of this iteration
-            error.append(la.norm(x - x_star)**2)
+	x = x_start
 
-            assert not np.isnan(error[-1])
+	# B starts as the identity matrix
+	B = np.diag(np.ones(len(x_start)))
 
-    return x, error
+	error = [la.norm(x - x_star)**2]
+
+	for t in xrange(T):
+	    
+	    x, B, n = update(x, t, B, n, Tau)
+
+	    if (t % 1 == 0) or (t == T - 1):
+	        # calculate the error of this iteration
+	        error.append(la.norm(x - x_star)**2)
+
+	        assert not np.isnan(error[-1])
+
+	return x, error
+
 
 def main():
-	N = 5
+	N = 5 #dimension
 	
-	x_star = np.ones((N,1))
-	x_start = np.ones((N,1)) * 3
+	x_star = np.ones((N,1)) #The optimal answer
+	x_start = np.ones((N,1)) * 3 #The arbitrary point we start from
 
-	Tau = 1
-	n = 0.01
+	#tuning parameters which dictate how the stepsize will change
+	Tau = 1000
+	n = 0.1
 
+	#optimize using BFGS
 	x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=5)
+
+	#optimize using online BFGS, AKA stochastic BFGS
 	x, errors_2 = descent(obfgs, x_start, x_star, n, Tau, T=5)
 
 
-	# plot results
+	# plot error vs. iteration for both
 	plt.clf()
 	plt.plot(errors_1, label="BFGS")
 	plt.plot(errors_2, label="oBFGS")
