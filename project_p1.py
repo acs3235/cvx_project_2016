@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 '''Convex Optimization Project 2016
 Written by: Andrew Stier, Farzan Memarian, Sid Desai'''
 
@@ -55,11 +56,19 @@ def f(x):
 	fx = 1/2 * np.dot(np.dot((x - X_STAR).T,H),x - X_STAR)
 	return fx
 
-def linemin(Tau, t, n):
+def schedulestep(Tau, t, n):
 	#update the stepsize
 	return Tau/(Tau + t) * n
 
-
+def linemin(f, xk, pk):
+	#implements btls and returns step size
+	#UNTESTED CODE
+	a = 1
+	rho = 0.5
+	c = 0.5
+	while f(xk+a*pk) <= f(xk) + c*a*np.dot(gradf(xk).T,pk):
+		a = rho*a
+	return a
 
 def bfgs(x, t, B, n, Tau):
 	'''
@@ -73,7 +82,7 @@ def bfgs(x, t, B, n, Tau):
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(Tau, t, n)
+	n = linemin(f, x, p)
 	s = n*p
 	x_new = x + s
 	y = gradf(x_new) - gf
@@ -97,7 +106,7 @@ def obfgs(x, t, B, n, Tau):
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(Tau, t, n)
+	n = schedulestep(Tau, t, n)
 	s = n/C*p
 	x_new = x + s
 	y = ogradf(x_new, indices) - gf + LAM * s
