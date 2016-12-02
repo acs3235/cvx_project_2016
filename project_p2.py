@@ -32,6 +32,12 @@ X_STAR = ??
 def c(w, xi):
 	return 1/(1 + math.exp(-np.dot(xi.T,w)))
 
+def fi(w, xi, zi):
+	return zi * math.log(x(w, xi)) + (1 - zi) * math.log(1 - c(w,xi))
+
+def gfi(w,xi,zi):
+	return (c(w,xi) - zi)*xi
+
 def gradf(x):
 	#Calculates the gradient of the function
 	# H = np.dot(J,J.T)
@@ -39,6 +45,7 @@ def gradf(x):
 	return gf
 
 def ogradf(x, indices):
+
 	#Calculates the gradient of the function
 	# H = np.dot(J,J.T)
 	# x_sub = x[indices]
