@@ -13,8 +13,18 @@ from scipy import linalg as LA
 import math
 from sklearn.datasets import fetch_rcv1
 
-DEBUG = 1
-DATASIZE = 10
+
+ITERATIONS = 50
+LAM = 0.1
+C = 0.1
+TAU = 1000
+STEPSIZE = 0.01
+EPSILON = 10**(-10)
+BATCH_SIZE = 1000
+
+
+DEBUG = 0
+DATASIZE = 1000
 N = 3 #dimension
 
 # rcv1 = fetch_rcv1()
@@ -28,23 +38,19 @@ data = np.loadtxt('Skin_NonSkin.txt')
 
 X = data[:,:3]
 z = data[:,3]
+z = z - 1
+
+z = np.reshape(z,(len(z),1))
 
 print X.shape
 print z.shape
+print np.unique(z)
 
-
-ITERATIONS = 4
-LAM = 0.1
-C = 0.1
-TAU = 1000
-STEPSIZE = 0.1
-EPSILON = 10**(-10)
-BATCH_SIZE = 10
 
 
 if(DEBUG == 1):
 	print "debug mode"
-	X = X[:DATASIZE,:N]
+	X = X[:DATASIZE,:]
 	z = z[:DATASIZE]
 
 
@@ -56,6 +62,8 @@ def fi(w, xi, zi):
 	return zi * math.log(c(w, xi)) + (1 - zi) * math.log(1 - c(w,xi))
 
 def gfi(w,xi,zi):
+	print xi
+	print w
 	return np.asscalar(c(w,xi) - zi)*xi
 
 def f(w):
@@ -63,13 +71,16 @@ def f(w):
 	for i, zi in enumerate(z):
 		xi = X[i,:].T
 		ans = ans + fi(w,xi,zi)
-	return np.asscalar(ans)
+	return -1/len(z) * np.asscalar(ans)
 
-def gradf(x):
+def gradf(w):
 	#Calculates the gradient of the function
-	# H = np.dot(J,J.T)
-	# gf = np.dot(H,(x - X_STAR))
 	gf = 0
+	for i, zi in enumerate(z):
+		xi = X[i,:].T
+		gf = gf + gfi(w,xi,zi)
+
+	gf = -1/len(z) * np.reshape(gf,(len(gf),1))
 	return gf
 
 def ogradf(w, indices):
@@ -79,6 +90,8 @@ def ogradf(w, indices):
 		xi = X[i,:].T
 		zi = z[i]
 		gf = gf + gfi(w,xi,zi)
+
+	gf = -1/len(z) * np.reshape(gf,(len(gf),1))
 	return gf
 
 def linemin(Tau, t, n):
@@ -121,23 +134,30 @@ def obfgs(x, t, B, n, Tau):
 	indices = random.sample(range(0, len(z)), BATCH_SIZE)
 	gf = ogradf(x, indices)
 
+
+
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
 	n = linemin(Tau, t, n)
 	s = n/C*p
 	x_new = x + s
+
+	# print x_new.shape
+	# sys.exit()
+
 	y = ogradf(x_new, indices) - gf + LAM * s
 	if t == 0:
 		B = np.asscalar(np.dot(s.T,y)/np.dot(y.T,y)) * I
 	ro = 1/np.asscalar(np.dot(s.T, y))
-	# print "got here"
-	part1 = np.dot((I - ro * np.dot(s, y.T)),B)
-	# print "1"
-	part2 = (I - ro*np.dot(y,s.T))
-	# print "2"
-	part3 = C*ro*np.dot(s,s.T)
-	# print "3"
-	B = np.dot(part1,part2) + part3
+	# # print "got here"
+	# part1 = np.dot((I - ro * np.dot(s, y.T)),B)
+	# # print "1"
+	# part2 = (I - ro*np.dot(y,s.T))
+	# # print "2"
+	# part3 = C*ro*np.dot(s,s.T)
+	# # print "3"
+	# B = np.dot(part1,part2) + part3
+	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + ro*np.dot(s,s.T)
 
 	return x_new, B, n
 
@@ -181,14 +201,14 @@ def descent(update, x_start, n, Tau, T=100):
 def main():
 	
 	# x_star = np.ones((N,1)) #The optimal answer
-	x_start = np.ones((N,1)) * 0.5 #The arbitrary point we start from
+	x_start = np.ones((N,1)) * 0 #The arbitrary point we start from
 
 	#tuning parameters which dictate how the stepsize will change
 	Tau = TAU
 	n = STEPSIZE
 
 	#optimize using BFGS
-	# x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=ITERATIONS)
+	# x, errors_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
 
 	#optimize using online BFGS, AKA stochastic BFGS
 	x, errors_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS)
