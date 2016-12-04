@@ -12,12 +12,13 @@ import math
 import sys
 from scipy import linalg as LA
 import math
+import time
 
-ITERATIONS = 50
+ITERATIONS = 100
 LAM = 0.1
 C = 0.1
-TAU = 1000
-STEPSIZE = 0.1
+TAU = 20
+STEPSIZE = .5
 EPSILON = 10**(-10)
 BATCH_SIZE = 2
 
@@ -58,13 +59,14 @@ def f(x):
 
 def schedulestep(Tau, t, n):
 	#update the stepsize
-	return Tau/(Tau + t) * n
+    #return Tau/(Tau + t) * n
+    return n
 
 def linemin(f, gradf, xk, pk):
 	#implements btls and returns step size
 	a = 1
 	rho = 0.9
-	c = 0.9
+	c = 0.8
 	while f(xk+a*pk) > f(xk) + c*a*np.dot(gradf(xk).T,pk):
 		a = rho*a
 	return a
@@ -81,7 +83,7 @@ def bfgs(x, t, B, n, Tau):
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(f, gradf, x, p)
+    #n = linemin(f, gradf, x, p)
 	s = n*p
 	x_new = x + s
 	y = gradf(x_new) - gf
@@ -90,11 +92,11 @@ def bfgs(x, t, B, n, Tau):
 	ro = 1/np.dot(s.T, y)
 	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + ro*np.dot(s,s.T)
 
-	return x_new, B, n
+	return x_new, B
 
 def obfgs(x, t, B, n, Tau):
 	I = np.diag(np.ones(len(x)))
-	
+
 	#Step 2
 	if t == 0:
 		B = EPSILON * I
@@ -114,7 +116,7 @@ def obfgs(x, t, B, n, Tau):
 	ro = 1/np.dot(s.T, y)
 	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + C*ro*np.dot(s,s.T)
 
-	return x_new, B, n
+	return x_new, B
 
 def descent(update, x_start, x_star, n, Tau, T=100):
 	'''
@@ -132,6 +134,7 @@ def descent(update, x_start, x_star, n, Tau, T=100):
 	Output:
 	x: The optimal x found by the descent algorithm
 	error: A list containing the error each iteration
+	times: A list containing the timestamp of each iteration
 	'''
 
 	x = x_start
@@ -140,23 +143,26 @@ def descent(update, x_start, x_star, n, Tau, T=100):
 	B = np.diag(np.ones(len(x_start)))
 
 	error = [la.norm(x - x_star)**2]
+	start = time.time()
+	times = [0]
 
 	for t in xrange(T):
-	    
-	    x, B, n = update(x, t, B, n, Tau)
 
-	    if (t % 1 == 0) or (t == T - 1):
-	        # calculate the error of this iteration
-	        error.append(la.norm(x - x_star)**2)
+		x, B = update(x, t, B, n, Tau)
 
-	        assert not np.isnan(error[-1])
+		if (t % 1 == 0) or (t == T - 1):
+			# calculate the error of this iteration
+			error.append(la.norm(x - x_star)**2)
+			times.append(time.time()-start)
 
-	return x, error
+			assert not np.isnan(error[-1])
+
+	return x, error, times
 
 
 def main():
 	N = 5 #dimension
-	
+
 	x_star = np.ones((N,1)) #The optimal answer
 	x_start = np.ones((N,1)) * 3 #The arbitrary point we start from
 
@@ -165,16 +171,16 @@ def main():
 	n = STEPSIZE
 
 	#optimize using BFGS
-	x, errors_1 = descent(bfgs, x_start, x_star, n, Tau, T=ITERATIONS)
+	x, errors_1, times_1 = descent(bfgs, x_start, x_star, n, Tau, T=ITERATIONS)
 
 	#optimize using online BFGS, AKA stochastic BFGS
-	x, errors_2 = descent(obfgs, x_start, x_star, n, Tau, T=ITERATIONS)
+	x, errors_2, times_2 = descent(obfgs, x_start, x_star, n, Tau, T=ITERATIONS*2)
 
 
 	# plot error vs. iteration for both
 	plt.clf()
-	plt.plot(errors_1, label="BFGS")
-	plt.plot(errors_2, label="oBFGS")
+	plt.semilogy(times_1, errors_1, label="BFGS")
+	plt.semilogy(times_2, errors_2, label="oBFGS")
 	plt.title('Error')
 	plt.legend()
 	plt.show()
@@ -183,4 +189,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+	main()
