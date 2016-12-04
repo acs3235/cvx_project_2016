@@ -60,9 +60,8 @@ def schedulestep(Tau, t, n):
 	#update the stepsize
 	return Tau/(Tau + t) * n
 
-def linemin(f, xk, pk):
+def linemin(f, gradf, xk, pk):
 	#implements btls and returns step size
-	#UNTESTED CODE
 	a = 1
 	rho = 0.9
 	c = 0.9
@@ -82,7 +81,7 @@ def bfgs(x, t, B, n, Tau):
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(f, x, p)
+	n = linemin(f, gradf, x, p)
 	s = n*p
 	x_new = x + s
 	y = gradf(x_new) - gf
