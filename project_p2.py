@@ -14,17 +14,17 @@ import math
 from sklearn.datasets import fetch_rcv1
 
 
-ITERATIONS = 50
+ITERATIONS = 5
 LAM = 0.1
 C = 0.1
 TAU = 1000
-STEPSIZE = 0.01
+STEPSIZE = 0.1
 EPSILON = 10**(-10)
 BATCH_SIZE = 1000
 
 
 DEBUG = 0
-DATASIZE = 1000
+DATASIZE = 5000
 N = 3 #dimension
 
 # rcv1 = fetch_rcv1()
@@ -56,14 +56,17 @@ if(DEBUG == 1):
 
 def c(w, xi):
 	# xi = xi.todense()
-	return 1/(1 + math.exp(-np.dot(xi.T,w)))
+	ans = 1/(1 + math.exp(-np.dot(xi.T,w)))
+	# if ans == 1:
+	# 	ans = np.nextafter(1,-1)
+	# if ans == 0:
+	# 	ans = np.nextafter(0,1)
+	return ans
 
 def fi(w, xi, zi):
 	return zi * math.log(c(w, xi)) + (1 - zi) * math.log(1 - c(w,xi))
 
 def gfi(w,xi,zi):
-	print xi
-	print w
 	return np.asscalar(c(w,xi) - zi)*xi
 
 def f(w):
@@ -105,7 +108,6 @@ def bfgs(x, t, B, n, Tau):
 	Update x based on the BFGS algorithm as listed in algorithm 1
 	Steps 3a-3i
 	'''
-
 
 	I = np.diag(np.ones(len(x)))
 	gf = gradf(x)
@@ -208,17 +210,16 @@ def main():
 	n = STEPSIZE
 
 	#optimize using BFGS
-	# x, errors_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
+	x, errors_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
 
 	#optimize using online BFGS, AKA stochastic BFGS
-	x, errors_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS)
+	# x, errors_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS)
 
-	print errors_2[1]
 
 	# plot error vs. iteration for both
 	plt.clf()
-	# plt.plot(errors_1, label="BFGS")
-	plt.plot(errors_2, label="oBFGS")
+	plt.plot(errors_1, label="BFGS")
+	# plt.plot(errors_2, label="oBFGS")
 	plt.title('Error')
 	plt.legend()
 	plt.show()
