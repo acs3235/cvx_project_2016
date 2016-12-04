@@ -64,9 +64,9 @@ def linemin(f, xk, pk):
 	#implements btls and returns step size
 	#UNTESTED CODE
 	a = 1
-	rho = 0.5
-	c = 0.5
-	while f(xk+a*pk) <= f(xk) + c*a*np.dot(gradf(xk).T,pk):
+	rho = 0.9
+	c = 0.9
+	while f(xk+a*pk) > f(xk) + c*a*np.dot(gradf(xk).T,pk):
 		a = rho*a
 	return a
 
