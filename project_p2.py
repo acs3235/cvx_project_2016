@@ -14,17 +14,17 @@ import math
 from sklearn.datasets import fetch_rcv1
 
 
-ITERATIONS = 50
+ITERATIONS = 10
 LAM = 0.1
 C = 0.1
-TAU = 1000
-STEPSIZE = 0.01
+TAU = 20
+STEPSIZE = 0.1
 EPSILON = 10**(-10)
 BATCH_SIZE = 1000
 
 
 DEBUG = 0
-DATASIZE = 1000
+DATASIZE = 5000
 N = 3 #dimension
 
 # rcv1 = fetch_rcv1()
@@ -56,14 +56,17 @@ if(DEBUG == 1):
 
 def c(w, xi):
 	# xi = xi.todense()
-	return 1/(1 + math.exp(-np.dot(xi.T,w)))
+	ans = 1/(1 + math.exp(-np.dot(xi.T,w)))
+	# if ans == 1:
+	# 	ans = np.nextafter(1,-1)
+	# if ans == 0:
+	# 	ans = np.nextafter(0,1)
+	return ans
 
 def fi(w, xi, zi):
 	return zi * math.log(c(w, xi)) + (1 - zi) * math.log(1 - c(w,xi))
 
 def gfi(w,xi,zi):
-	print xi
-	print w
 	return np.asscalar(c(w,xi) - zi)*xi
 
 def f(w):
@@ -94,11 +97,19 @@ def ogradf(w, indices):
 	gf = -1/len(z) * np.reshape(gf,(len(gf),1))
 	return gf
 
-def linemin(Tau, t, n):
+def schedulestep(Tau, t, n):
 	#update the stepsize
 	return Tau/(Tau + t) * n
 
-
+def linemin(f, gradf, xk, pk):
+	#implements btls and returns step size
+	a = 1
+	rho = 0.9
+	c = 0.8
+	while f(xk+a*pk) > f(xk) + c*a*np.dot(gradf(xk).T,pk):
+		print "it"
+		a = rho*a
+	return a
 
 def bfgs(x, t, B, n, Tau):
 	'''
@@ -106,13 +117,18 @@ def bfgs(x, t, B, n, Tau):
 	Steps 3a-3i
 	'''
 
-
 	I = np.diag(np.ones(len(x)))
 	gf = gradf(x)
 
+	if t == 0:
+		B = EPSILON * I
+
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(Tau, t, n)
+	if t == 0:
+		n = 0.1
+	else:
+		n = linemin(f, gradf, x, p)
 	s = n*p
 	x_new = x + s
 	y = gradf(x_new) - gf
@@ -121,7 +137,7 @@ def bfgs(x, t, B, n, Tau):
 	ro = 1/np.dot(s.T, y)
 	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + ro*np.dot(s,s.T)
 
-	return x_new, B, n
+	return x_new, B
 
 def obfgs(x, t, B, n, Tau):
 	I = np.diag(np.ones(len(x)))
@@ -138,7 +154,7 @@ def obfgs(x, t, B, n, Tau):
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-	n = linemin(Tau, t, n)
+	n = schedulestep(Tau, t, n)
 	s = n/C*p
 	x_new = x + s
 
@@ -159,7 +175,7 @@ def obfgs(x, t, B, n, Tau):
 	# B = np.dot(part1,part2) + part3
 	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + ro*np.dot(s,s.T)
 
-	return x_new, B, n
+	return x_new, B
 
 def descent(update, x_start, n, Tau, T=100):
 	'''
@@ -186,14 +202,16 @@ def descent(update, x_start, n, Tau, T=100):
 	error = [f(x)]
 
 	for t in xrange(T):
+
+		print t
 	    
-	    x, B, n = update(x, t, B, n, Tau)
+		x, B = update(x, t, B, n, Tau)
 
-	    if (t % 1 == 0) or (t == T - 1):
-	        # calculate the error of this iteration
-	        error.append(f(x))
+		if (t % 1 == 0) or (t == T - 1):
+			# calculate the error of this iteration
+			error.append(f(x))
 
-	        assert not np.isnan(error[-1])
+			assert not np.isnan(error[-1])
 
 	return x, error
 
@@ -207,17 +225,18 @@ def main():
 	Tau = TAU
 	n = STEPSIZE
 
-	#optimize using BFGS
-	# x, errors_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
-
 	#optimize using online BFGS, AKA stochastic BFGS
 	x, errors_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS)
 
-	print errors_2[1]
+	#optimize using BFGS
+	x, errors_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
+
+	
+
 
 	# plot error vs. iteration for both
 	plt.clf()
-	# plt.plot(errors_1, label="BFGS")
+	plt.plot(errors_1, label="BFGS")
 	plt.plot(errors_2, label="oBFGS")
 	plt.title('Error')
 	plt.legend()
