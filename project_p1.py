@@ -59,8 +59,7 @@ def f(x):
 
 def schedulestep(Tau, t, n):
 	#update the stepsize
-    #return Tau/(Tau + t) * n
-    return n
+    return Tau/(Tau + t) * n
 
 def linemin(f, gradf, xk, pk):
 	#implements btls and returns step size
@@ -83,7 +82,7 @@ def bfgs(x, t, B, n, Tau):
 
 	#Steps a through i of algorithm 1
 	p = np.dot(-B, gf)
-    #n = linemin(f, gradf, x, p)
+	n = linemin(f, gradf, x, p)
 	s = n*p
 	x_new = x + s
 	y = gradf(x_new) - gf
@@ -117,6 +116,18 @@ def obfgs(x, t, B, n, Tau):
 	B = np.dot(np.dot((I - ro * np.dot(s, y.T)),B),(I - ro*np.dot(y,s.T))) + C*ro*np.dot(s,s.T)
 
 	return x_new, B
+
+def gdbtls(x, t, B, n, Tau):
+	a = 1
+	rho = 0.7
+	c = 0.3
+	pk = -1*gradf(x)
+	while f(x+a*pk) > f(x) - c*a*np.dot(pk.T,pk):
+		a = rho*a
+	return x + a*pk, 0
+
+def gd(x, t, B, n, Tau):
+	return x - n*gradf(x), 0
 
 def descent(update, x_start, x_star, n, Tau, T=100):
 	'''
@@ -174,15 +185,21 @@ def main():
 	x, errors_1, times_1 = descent(bfgs, x_start, x_star, n, Tau, T=ITERATIONS)
 
 	#optimize using online BFGS, AKA stochastic BFGS
-	x, errors_2, times_2 = descent(obfgs, x_start, x_star, n, Tau, T=ITERATIONS*2)
+	x, errors_2, times_2 = descent(obfgs, x_start, x_star, n, Tau, T=240)
+
+	#optimize using gradient descent
+	x, errors_3, times_3 = descent(gd, x_start, x_star, n, Tau, T=ITERATIONS*16)
 
 
 	# plot error vs. iteration for both
 	plt.clf()
 	plt.semilogy(times_1, errors_1, label="BFGS")
 	plt.semilogy(times_2, errors_2, label="oBFGS")
+	plt.semilogy(times_3, errors_3, label="GD")
 	plt.title('Error')
 	plt.legend()
+	plt.xlabel('Wall Time (s)')
+	plt.ylabel('Error (x - x*)')
 	plt.show()
 	plt.savefig('Problem1.eps')
 
