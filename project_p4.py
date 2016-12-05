@@ -13,9 +13,11 @@ from scipy import linalg as LA
 import math
 from sklearn.datasets import fetch_rcv1
 import time
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 
-ITERATIONS = 25
+ITERATIONS = 50
 LAM = 0.1
 C = 0.1
 TAU = 20
@@ -25,27 +27,22 @@ BATCH_SIZE = 500
 
 
 DEBUG = 0
-DATASIZE = 5000
-N = 3 #dimension
+DATASIZE = 1000
+N = 20 #dimension
 
-# rcv1 = fetch_rcv1()
-# data = rcv1.data
-# target = rcv1.target
+print "loading data..."
+df = pd.read_csv('bank-additional-full.csv', sep=';')
+df = df.head(n=5000)
+df = df.apply(LabelEncoder().fit_transform)
 
-# X = data
-# z = target[:,0]
+data = df.as_matrix()
 
-data = np.loadtxt('Skin_NonSkin.txt')
-
-X = data[:,:3]
-z = data[:,3]
-z = z - 1
-
+X = data[:,:20]
+z = data[:,20]
 z = np.reshape(z,(len(z),1))
 
-print X.shape
-print z.shape
-print np.unique(z)
+np.save("X.npy", X)
+np.save("z.npy", z)
 
 
 
@@ -230,7 +227,7 @@ def main():
 	n = STEPSIZE
 
 	#optimize using online BFGS, AKA stochastic BFGS
-	x, errors_2, times_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS)
+	x, errors_2, times_2 = descent(obfgs, x_start, n, Tau, T=200)
 
 	#optimize using BFGS
 	x, errors_1, times_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
