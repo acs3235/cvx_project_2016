@@ -15,7 +15,7 @@ from sklearn.datasets import fetch_rcv1
 import time
 
 
-ITERATIONS = 25
+ITERATIONS = 15
 LAM = 0.1
 C = 0.1
 TAU = 20
@@ -178,6 +178,10 @@ def obfgs(x, t, B, n, Tau):
 
 	return x_new, B
 
+def gd(x, t, B, n, Tau):
+	x_new = x - n*gradf(x)
+	return x_new, 0
+
 def descent(update, x_start, n, Tau, T=100):
 	'''
 	This function does descent optimization using the update method of choice.
@@ -229,19 +233,22 @@ def main():
 	Tau = TAU
 	n = STEPSIZE
 
-	#optimize using online BFGS, AKA stochastic BFGS
-	x, errors_2, times_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS)
-
 	#optimize using BFGS
 	x, errors_1, times_1 = descent(bfgs, x_start, n, Tau, T=ITERATIONS)
 
-	
+	#optimize using online BFGS, AKA stochastic BFGS
+	x, errors_2, times_2 = descent(obfgs, x_start, n, Tau, T=ITERATIONS*2)
+
+	#optimize using GD
+	x, errors_3, times_3 = descent(gd, x_start, -0.0001, Tau, T=ITERATIONS*2)
+
 
 
 	# plot error vs. iteration for both
 	plt.clf()
 	plt.plot(times_1, errors_1, label="BFGS")
 	plt.plot(times_2, errors_2, label="oBFGS")
+	plt.plot(times_3, errors_3, label="GD")
 	plt.title('Error')
 	plt.legend()
 	plt.xlabel('Wall Time (s)')
