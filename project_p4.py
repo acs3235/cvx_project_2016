@@ -11,10 +11,10 @@ import math
 import sys
 from scipy import linalg as LA
 import math
-#from sklearn.datasets import fetch_rcv1
+from sklearn.datasets import fetch_rcv1
 import time
 import pandas as pd
-#from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder
 
 
 ITERATIONS = 50
