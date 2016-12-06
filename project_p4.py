@@ -11,10 +11,10 @@ import math
 import sys
 from scipy import linalg as LA
 import math
-from sklearn.datasets import fetch_rcv1
+#from sklearn.datasets import fetch_rcv1
 import time
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+#from sklearn.preprocessing import LabelEncoder
 
 
 ITERATIONS = 50
@@ -26,7 +26,7 @@ EPSILON = 10**(-10)
 BATCH_SIZE = 500
 
 
-DEBUG = 0
+DEBUG = 1
 DATASIZE = 1000
 N = 20 #dimension
 
@@ -36,7 +36,7 @@ df = df.head(n=5000)
 df = df.apply(LabelEncoder().fit_transform)
 
 data = df.as_matrix()
-
+print "shape of dataset", np.shape(data)
 X = data[:,:20]
 z = data[:,20]
 z = np.reshape(z,(len(z),1))

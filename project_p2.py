@@ -11,7 +11,7 @@ import math
 import sys
 from scipy import linalg as LA
 import math
-from sklearn.datasets import fetch_rcv1
+#from sklearn.datasets import fetch_rcv1
 import time
 
 
@@ -24,7 +24,7 @@ EPSILON = 10**(-10)
 BATCH_SIZE = 500
 
 
-DEBUG = 0
+DEBUG = 1
 DATASIZE = 5000
 N = 3 #dimension
 
@@ -35,8 +35,10 @@ N = 3 #dimension
 # X = data
 # z = target[:,0]
 
+
 data = np.loadtxt('Skin_NonSkin.txt')
 
+print "shape of dataset", np.shape(data)
 X = data[:,:3]
 z = data[:,3]
 z = z - 1
